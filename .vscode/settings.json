@@ -1,0 +1,4 @@
+{
+    "python.pythonPath": "F:\\Anaconda\\envs\\DeepLearning\\python.exe",
+    "python.autoComplete.extraPaths": ["F:\\Project\\YOLO"],
+}
