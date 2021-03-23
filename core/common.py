@@ -30,11 +30,11 @@ class BatchNormalization(tf.keras.layers.BatchNormalization):
         return super().call(x, training)
     
     
-def convolutional(input_later, filters_shape, downsample=False, activate=True, bn=True, activate_type='leaky'):
+def convolutional(input_layer, filters_shape, downsample=False, activate=True, bn=True, activate_type='leaky'):
     """[封装的卷积函数]
 
     Args:
-        input_later (tensor): 输入层]
+        input_layer (tensor): 输入层]
         filters_shape (tuple/list): filter 的维度, (f, f, c)
         downsample (bool, optional): 是否为下采样的卷积. Defaults to False.
         activate (bool, optional): 是否定义激活函数. Defaults to True.
@@ -46,7 +46,7 @@ def convolutional(input_later, filters_shape, downsample=False, activate=True, b
     """
     
     if downsample:
-        input_later = tf.keras.layers.ZeroPadding2D((1,0), (1,0))(input_later)
+        input_layer = tf.keras.layers.ZeroPadding2D( ((1,0), (1,0)) )(input_layer)
         padding = 'valid'
         stride = 2
     else:
@@ -55,13 +55,13 @@ def convolutional(input_later, filters_shape, downsample=False, activate=True, b
     
     conv = tf.keras.layers.Conv2D(filters = filters_shape[-1], 
                                   kernel_size = filters_shape[0],
-                                  strides = strides,
+                                  strides = stride,
                                   padding = padding,
                                   use_bias = not bn,
                                   kernel_regularizer = tf.keras.regularizers.l2(l2=0.0005),
                                   kernel_initializer = tf.random_normal_initializer(stddev=0.01),
                                   bias_initializer = tf.constant_initializer(0.)
-                                  )(input_later)
+                                  )(input_layer)
     
     if bn:
         conv = BatchNormalization()(conv)
@@ -76,11 +76,11 @@ def convolutional(input_later, filters_shape, downsample=False, activate=True, b
     return conv
 
 
-def residual_block(input_later, input_channel, filter_nums, activate_type='leaky'):
+def residual_block(input_layer, input_channel, filter_nums, activate_type='leaky'):
     """残差模块
 
     Args:
-        input_later (tensor): 输入特征
+        input_layer (tensor): 输入特征
         input_channel (uint): 输入特征的通道数
         filter_nums (tuple): 第一和第二层卷积的filter数
         activate_type (str, optional): 激活函数类型. Defaults to 'leaky'.
