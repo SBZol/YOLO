@@ -21,7 +21,7 @@ class BatchNormalization(tf.keras.layers.BatchNormalization):
     `layer.trainable = False` is to freeze the layer, so the layer will use
     stored moving `var` and `mean` in the "inference mode", and both `gama`
     and `beta` will not be updated !
-    zol：目前没搞懂继承这个类重写它的目的
+    zol：目前没搞懂继承这个BN类重写它的目的
     """
     def call(self, x, training=False):
         if not training:
@@ -74,5 +74,65 @@ def convolutional(input_later, filters_shape, downsample=False, activate=True, b
             conv = mish(conv)
             
     return conv
+
+
+def residual_block(input_later, input_channel, filter_nums, activate_type='leaky'):
+    """残差模块
+
+    Args:
+        input_later (tensor): 输入特征
+        input_channel (uint): 输入特征的通道数
+        filter_nums (tuple): 第一和第二层卷积的filter数
+        activate_type (str, optional): 激活函数类型. Defaults to 'leaky'.
+
+    Returns:
+        tensor: 残差模块的输出
+    """
+    
+    short_cut = input_layer
+    
+    filter_num1 = filter_nums[0]
+    filter_num2 = filter_nums[1]
+    
+    conv = convolutional(input_layer, filters_shape = (1, 1, input_channel, filter_num1), activate_type = activate_type)
+    conv = convolutional(conv, filters_shape = (3, 3, filter_num1, filter_num2), activate_type = activate_type)
+    
+    res_output = short_cut + conv # 残差连接
+    
+    return res_output
+
+
+def upsample(input_layer):
+    """resize图像变成原本的两倍
+
+    Args:
+        input_layer (tensor): 输入图像
+
+    Returns:
+        tensor: resize后的图像
+    """
+    upsample_layer = tf.image.resize(input_layer, 
+                                     (input_layer.shape[1] * 2), 
+                                     input_layer.shape[2] * 2, 
+                                     method='bilinear')
+    return upsample_layer
+
+
+def route_group(input_layer, groups, group_id):
+    """拆分张量，并返回需要的子张量列表
+
+    Args:
+        input_layer (tensor): 输入的tensor
+        groups ([type]): 分组数 
+        group_id ([type]): 返回的子张量坐标
+
+    Returns:
+        tensor: 拆分后指定的子张量
+    """
+    conv = tf.split(input_layer, num_of_size_splits = groups, axis = -1)
+    
+    sub_tensor = conv[group_id]
+    
+    return sub_tensor
 
 
