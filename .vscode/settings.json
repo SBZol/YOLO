@@ -1,4 +1,7 @@
 {
     "python.pythonPath": "F:\\Anaconda\\envs\\DeepLearning\\python.exe",
-    "python.autoComplete.extraPaths": ["F:\\Project\\YOLO"],
+    "python.autoComplete.extraPaths": [
+        "F:\\Project\\YOLO"
+    ],
+    "python.formatting.provider": "autopep8",
 }
