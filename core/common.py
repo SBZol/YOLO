@@ -15,6 +15,7 @@ from activations import mish
 
 import tensorflow as tf
 
+
 class BatchNormalization(tf.keras.layers.BatchNormalization):
     """
     "Frozen state" and "inference mode" are two separate concepts.
@@ -28,9 +29,14 @@ class BatchNormalization(tf.keras.layers.BatchNormalization):
             training = tf.constant(False)
         training = tf.logical_and(training, self.trainable)
         return super().call(x, training)
-    
-    
-def convolutional(input_layer, filters_shape, downsample=False, activate=True, bn=True, activate_type='leaky'):
+
+
+def convolutional(input_layer,
+                  filters_shape,
+                  downsample=False,
+                  activate=True,
+                  bn=True,
+                  activate_type='leaky'):
     """[封装的卷积函数]
 
     Args:
@@ -44,39 +50,43 @@ def convolutional(input_layer, filters_shape, downsample=False, activate=True, b
     Returns:
         Conv2D
     """
-    
+
     if downsample:
-        input_layer = tf.keras.layers.ZeroPadding2D( ((1,0), (1,0)) )(input_layer)
+        input_layer = tf.keras.layers.ZeroPadding2D(
+            ((1, 0), (1, 0)))(input_layer)
         padding = 'valid'
         stride = 2
     else:
         stride = 1
         padding = 'same'
-    
-    conv = tf.keras.layers.Conv2D(filters = filters_shape[-1], 
-                                  kernel_size = filters_shape[0],
-                                  strides = stride,
-                                  padding = padding,
-                                  use_bias = not bn,
-                                  kernel_regularizer = tf.keras.regularizers.l2(l2=0.0005),
-                                  kernel_initializer = tf.random_normal_initializer(stddev=0.01),
-                                  bias_initializer = tf.constant_initializer(0.)
-                                  )(input_layer)
-    
+
+    conv = tf.keras.layers.Conv2D(
+        filters=filters_shape[-1],
+        kernel_size=filters_shape[0],
+        strides=stride,
+        padding=padding,
+        use_bias=not bn,
+        kernel_regularizer=tf.keras.regularizers.l2(l2=0.0005),
+        kernel_initializer=tf.random_normal_initializer(stddev=0.01),
+        bias_initializer=tf.constant_initializer(0.))(input_layer)
+
     if bn:
         conv = BatchNormalization()(conv)
-        
+
     if activate == True:
         if activate == 'leaky':
             conv = tf.nn.leaky_relu(conv, alpha=0.1)
-            
+
         elif activate == 'mish':
             conv = mish(conv)
-            
+
     return conv
 
 
-def residual_block(input_layer, input_channel, filter_nums, activate_type='leaky'):
+def residual_block(input_layer,
+                   input_channel,
+                   filter_nums,
+                   activate_type='leaky'):
     """残差模块
 
     Args:
@@ -88,17 +98,21 @@ def residual_block(input_layer, input_channel, filter_nums, activate_type='leaky
     Returns:
         tensor: 残差模块的输出
     """
-    
+
     short_cut = input_layer
-    
+
     filter_num1 = filter_nums[0]
     filter_num2 = filter_nums[1]
-    
-    conv = convolutional(input_layer, filters_shape = (1, 1, input_channel, filter_num1), activate_type = activate_type)
-    conv = convolutional(conv, filters_shape = (3, 3, filter_num1, filter_num2), activate_type = activate_type)
-    
-    res_output = short_cut + conv # 残差连接
-    
+
+    conv = convolutional(input_layer,
+                         filters_shape=(1, 1, input_channel, filter_num1),
+                         activate_type=activate_type)
+    conv = convolutional(conv,
+                         filters_shape=(3, 3, filter_num1, filter_num2),
+                         activate_type=activate_type)
+
+    res_output = short_cut + conv  # 残差连接
+
     return res_output
 
 
@@ -111,10 +125,9 @@ def upsample(input_layer):
     Returns:
         tensor: resize后的图像
     """
-    upsample_layer = tf.image.resize(input_layer, 
-                                     (input_layer.shape[1] * 2), 
-                                     input_layer.shape[2] * 2, 
-                                     method='bilinear')
+    upsample_layer = tf.image.resize(
+        input_layer, (input_layer.shape[1] * 2, input_layer.shape[2] * 2),
+        method='bilinear')
     return upsample_layer
 
 
@@ -129,10 +142,8 @@ def route_group(input_layer, groups, group_id):
     Returns:
         tensor: 拆分后指定的子张量
     """
-    conv = tf.split(input_layer, num_of_size_splits = groups, axis = -1)
-    
+    conv = tf.split(input_layer, groups, -1)
+
     sub_tensor = conv[group_id]
-    
+
     return sub_tensor
-
-

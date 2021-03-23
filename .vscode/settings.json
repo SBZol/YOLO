@@ -3,5 +3,4 @@
     "python.autoComplete.extraPaths": [
         "F:\\Project\\YOLO"
     ],
-    "python.formatting.provider": "autopep8",
 }
