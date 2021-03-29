@@ -13,7 +13,20 @@
 # here put the import lib
 import numpy as np
 import tensorflow as tf
+import threading
 
+class myThread (threading.Thread):
+    def __init__(self, threadID, name, process_func, **kwargs):
+        threading.Thread.__init__(self)
+        self.threadID = threadID
+        self.name = name
+        self.process_func = process_func
+        self.kwargs = kwargs
+        
+    def run(self):
+        print ("开启线程：" + self.name)
+        self.process_func(**self.kwargs)
+        print ("退出线程：" + self.name)
 
 def iou(bboxes1, bboxes2):
     """计算bboxes的IoU
@@ -80,7 +93,8 @@ def ciou(bboxes1, bboxes2):
 
     v_1 = tf.math.atan(tf.math.divide_no_nan(bboxes1[..., 2], bboxes1[..., 3]))
     v_2 = tf.math.atan(tf.math.divide_no_nan(bboxes2[..., 2], bboxes2[..., 3]))
-    v = ((v_1 - v_2) * 2 / np.pi)**2
+    v = (4 / np.pi**2) * (v_1 - v_2)**2
+    # v = ((v_1 - v_2) * 2 / np.pi)**2
 
     alpha = tf.math.divide_no_nan(v, 1 - iou + v)
     ciou = diou - alpha * v
