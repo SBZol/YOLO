@@ -11,22 +11,26 @@
 '''
 
 # here put the import lib
+from config import cfg
+
+import threading
 import numpy as np
 import tensorflow as tf
-import threading
 
-class myThread (threading.Thread):
+
+class myThread(threading.Thread):
     def __init__(self, threadID, name, process_func, **kwargs):
         threading.Thread.__init__(self)
         self.threadID = threadID
         self.name = name
         self.process_func = process_func
         self.kwargs = kwargs
-        
+
     def run(self):
-        print ("开启线程：" + self.name)
+        print("开启线程：" + self.name)
         self.process_func(**self.kwargs)
-        print ("退出线程：" + self.name)
+        print("退出线程：" + self.name)
+
 
 def iou(bboxes1, bboxes2):
     """计算bboxes的IoU
@@ -149,3 +153,25 @@ def process_bboxes(bboxes1, bboxes2, need_enclose=True):
         enclose_section = enclose_right_down - enclose_left_up
 
     return inter_area, union_area, enclose_section
+
+
+def load_config(FLAGS):
+    STRIDES = np.array(cfg.YOLO.STRIDES)
+
+    anchers = np.array(cfg.YOLO.ANCHORS)
+
+    ANCHORS = np.reshape(anchers, (3, 3, 2))
+
+    XYSCALE = cfg.YOLO.XYSCALE
+
+    NUM_CLASS = len(read_class_names(cfg.YOLO.CLASSES))
+
+    return STRIDES, ANCHORS, NUM_CLASS, XYSCALE
+
+
+def read_class_names(class_file_name):
+    names = {}
+    with open(class_file_name, 'r') as data:
+        for ID, name in enumerate(data):
+            names[ID] = name.strip('\n')
+    return names

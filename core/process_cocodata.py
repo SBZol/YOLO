@@ -31,15 +31,17 @@ class coco_2_tfrecord:
         self,
         ann_path,
         train_data_path,
-        ouput_path,
+        data_ouput_path,
+        classes_path='',
     ):
         self.ann_path = ann_path
         self.train_data_path = train_data_path
         self.train_img_paths = []
-        self.ouput_path = ouput_path
+        self.data_ouput_path = data_ouput_path
         self.img_bboxes = {}
         self.categories_dict = {}
         self.valid_categories_list = []
+        self.classes_path = classes_path
 
     def process_cocodata(self):
 
@@ -56,11 +58,14 @@ class coco_2_tfrecord:
         train_img_names = os.listdir(self.train_data_path)
 
         for img_name in train_img_names:  # 查找训练集的图片是否都有对应的ID，并保存到一个列表中
-            
+
             # int(img_name[0:-4]) 是去掉文件名的后缀和前面的0
-            if int(img_name[0:-4]) in image_ids:  
+            if int(img_name[0:-4]) in image_ids:
                 img_path = os.path.join(self.train_data_path, img_name)
                 self.train_img_paths.append(img_path)
+
+        if os.path.exists(self.data_ouput_path):
+            os.remove(self.data_ouput_path)
 
         for item in self.train_img_paths:
             boxes = []
@@ -68,16 +73,20 @@ class coco_2_tfrecord:
             imgid = int(img_name[0:-4])
             annIds = coco.getAnnIds(imgIds=imgid, iscrowd=None)
             anns = coco.loadAnns(annIds)
+
             for ann in anns:
+
                 catid = ann['category_id']
-                if self.categories_dict[catid]  not in self.valid_categories_list:
+                if self.categories_dict[catid] not in self.valid_categories_list:
+                    
                     self.valid_categories_list.append(self.categories_dict[catid])
+                    
                 bbox = ann['bbox']
                 xmin = int(bbox[0])
                 xmax = int(bbox[0] + bbox[2])
                 ymin = int(bbox[1])
                 ymax = int(bbox[1] + bbox[3])
-                catid = ann['category_id']
+                
                 catid_name = self.categories_dict[catid]
                 valid_catid = self.valid_categories_list.index(catid_name)
                 boxes.append(xmin)
@@ -85,21 +94,32 @@ class coco_2_tfrecord:
                 boxes.append(xmax)
                 boxes.append(ymax)
                 boxes.append(valid_catid)
-                
+
             self.img_bboxes[item] = boxes
-            with open(output_path, "w") as f:
+            with open(self.data_ouput_path, "w") as f:
                 for file_name in self.img_bboxes.keys():
-                    f.write(file_name + ' ' + str(self.img_bboxes[file_name]) + '\n')
+                    f.write(file_name + ' ' + str(self.img_bboxes[file_name]) +
+                            "\n")
                     for img_bbox in self.img_bboxes[file_name]:
                         f.write(str(img_bbox) + ",")
                     f.write("\n")
 
-                
+        if classes_path != '':
 
-    
+            if os.path.exists(self.classes_path):
+                os.remove(self.classes_path)
+
+            with open(self.classes_path, 'w') as f:
+                for class_name in self.valid_categories_list:
+                    f.write(class_name + '\n')
+
+
 if __name__ == '__main__':
-    ann_path = os.path.join('F:\\', 'data', 'annotations','instances_val2017.json')
+    ann_path = os.path.join('F:\\', 'data', 'annotations',
+                            'instances_val2017.json')
     train_data_path = os.path.join('F:\\', 'data', 'coco2017', 'val2017')
-    output_path = os.path.join('F:\\', 'data', 'output', 'train.txt')
-    coco_process = coco_2_tfrecord(ann_path,train_data_path,output_path)
+    data_output_path = os.path.join('F:\\', 'data', 'output', 'train.txt')
+    classes_path = os.path.join('F:\\', 'data', 'output', 'classes.txt')
+    coco_process = coco_2_tfrecord(ann_path, train_data_path, data_output_path,
+                                   classes_path)
     coco_process.process_cocodata()
