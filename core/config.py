@@ -42,23 +42,36 @@ __C.TRAIN = edict()
 __C.TRAIN.ANNOT_PATH = os.path.join('F:\\', 'data', 'annotations',
                                     'instances_train2017.json')
 __C.TRAIN.DATA_PATH = os.path.join('F:\\', 'data', 'coco2017', 'train2017')
-__C.TRAIN.BATCH_SIZE          = 2
-__C.TRAIN.INPUT_SIZE          = 416
-__C.TRAIN.DATA_AUG            = True
+
+__C.TRAIN.BATCH_SIZE = 2
+__C.TRAIN.INPUT_SIZE = 416
+__C.TRAIN.DATA_AUG = True
+__C.TRAIN.WARMUP_EPOCHS = 2
 # __C.TRAIN.LR_INIT             = 1e-3
 # __C.TRAIN.LR_END              = 1e-6
-__C.TRAIN.WARMUP_EPOCHS       = 2
 # __C.TRAIN.FISRT_STAGE_EPOCHS    = 20
 # __C.TRAIN.SECOND_STAGE_EPOCHS   = 30
+
+# VAL options
+__C.VAL = edict()
+
+__C.VAL.ANNOT_PATH = os.path.join('F:\\', 'data', 'annotations',
+                                  'instances_val2017.json')
+__C.VAL.DATA_PATH = os.path.join('F:\\', 'data', 'coco2017', 'val2017')
 
 # TEST options
 __C.TEST = edict()
 
 __C.TEST.ANNOT_PATH = os.path.join('F:\\', 'data', 'annotations',
                                    'instances_test2017.json')
-__C.TEST.BATCH_SIZE           = 2
-__C.TEST.INPUT_SIZE           = 416
-__C.TEST.DATA_AUG             = False
+__C.TEST.DATA_PATH = os.path.join('F:\\', 'data', 'coco2017', 'test2017')
+__C.TEST.BATCH_SIZE = 2
+__C.TEST.INPUT_SIZE = 416
+__C.TEST.DATA_AUG = False
 # __C.TEST.DECTECTED_IMAGE_PATH = "./data/detection/"
 # __C.TEST.SCORE_THRESHOLD      = 0.25
 # __C.TEST.IOU_THRESHOLD        = 0.5
+
+# ouput
+__C.OUTPUT = edict()
+__C.OUTPUT.DIR_PATH = os.path.join('F:\\', 'data', 'output')
