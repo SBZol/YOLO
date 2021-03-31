@@ -26,18 +26,26 @@ import tensorflow as tf
 from pycocotools.coco import COCO
 
 
-class coco_2_tfrecord:
+class coco_2_txt:
     def __init__(
         self,
         ann_path,
-        train_data_path,
-        data_ouput_path,
+        data_path,
+        ouput_path,
         classes_path='',
     ):
+        """处理coco数据，保存至txt文件中
+
+        Args:
+            ann_path (str): coco ann数据路径
+            data_path (str): coco 训练数据路径
+            ouput_path (str): 数据信息输出路径  
+            classes_path (str, optional): 类别数据输出路径. Defaults to ''.
+        """
         self.ann_path = ann_path
-        self.train_data_path = train_data_path
+        self.data_path = data_path
         self.train_img_paths = []
-        self.data_ouput_path = data_ouput_path
+        self.ouput_path = ouput_path
         self.img_bboxes = {}
         self.categories_dict = {}
         self.valid_categories_list = []
@@ -55,54 +63,65 @@ class coco_2_tfrecord:
 
         image_ids = coco.getImgIds()
 
-        train_img_names = os.listdir(self.train_data_path)
+        train_img_names = os.listdir(self.data_path)
 
         for img_name in train_img_names:  # 查找训练集的图片是否都有对应的ID，并保存到一个列表中
 
             # int(img_name[0:-4]) 是去掉文件名的后缀和前面的0
             if int(img_name[0:-4]) in image_ids:
-                img_path = os.path.join(self.train_data_path, img_name)
+                img_path = os.path.join(self.data_path, img_name)
                 self.train_img_paths.append(img_path)
 
-        if os.path.exists(self.data_ouput_path):
-            os.remove(self.data_ouput_path)
+        if os.path.exists(self.ouput_path):
+            os.remove(self.ouput_path)
+            
+        with open(self.ouput_path, "w") as f:
 
-        for item in self.train_img_paths:
-            boxes = []
-            img_name = item.split('\\')[-1]
-            imgid = int(img_name[0:-4])
-            annIds = coco.getAnnIds(imgIds=imgid, iscrowd=None)
-            anns = coco.loadAnns(annIds)
+            for item in self.train_img_paths:
+                boxes = []
+                img_name = item.split('\\')[-1]
+                imgid = int(img_name[0:-4])
+                annIds = coco.getAnnIds(imgIds=imgid, iscrowd=None)
+                anns = coco.loadAnns(annIds)
 
-            for ann in anns:
+                f.write(item)
 
-                catid = ann['category_id']
-                if self.categories_dict[catid] not in self.valid_categories_list:
-                    
-                    self.valid_categories_list.append(self.categories_dict[catid])
-                    
-                bbox = ann['bbox']
-                xmin = int(bbox[0])
-                xmax = int(bbox[0] + bbox[2])
-                ymin = int(bbox[1])
-                ymax = int(bbox[1] + bbox[3])
-                
-                catid_name = self.categories_dict[catid]
-                valid_catid = self.valid_categories_list.index(catid_name)
-                boxes.append(xmin)
-                boxes.append(ymin)
-                boxes.append(xmax)
-                boxes.append(ymax)
-                boxes.append(valid_catid)
+                for index, ann in enumerate(anns):
 
-            self.img_bboxes[item] = boxes
-            with open(self.data_ouput_path, "w") as f:
-                for file_name in self.img_bboxes.keys():
-                    f.write(file_name + ' ' + str(self.img_bboxes[file_name]) +
-                            "\n")
-                    for img_bbox in self.img_bboxes[file_name]:
-                        f.write(str(img_bbox) + ",")
-                    f.write("\n")
+                    catid = ann['category_id']
+                    if self.categories_dict[
+                            catid] not in self.valid_categories_list:
+
+                        self.valid_categories_list.append(
+                            self.categories_dict[catid])
+
+                    bbox = ann['bbox']
+                    xmin = int(bbox[0])
+                    xmax = int(bbox[0] + bbox[2])
+                    ymin = int(bbox[1])
+                    ymax = int(bbox[1] + bbox[3])
+
+                    catid_name = self.categories_dict[catid]
+                    valid_catid = self.valid_categories_list.index(catid_name)
+                    boxes.append(xmin)
+                    boxes.append(ymin)
+                    boxes.append(xmax)
+                    boxes.append(ymax)
+                    boxes.append(valid_catid)
+                    info = ','.join([
+                        str(xmin),
+                        str(ymin),
+                        str(xmax),
+                        str(ymax),
+                        str(valid_catid)
+                    ])
+
+                    if index == 0:
+                        f.write(" " + info)
+                    else:
+                        f.write("," + info)
+                f.write("\n")
+                self.img_bboxes[item] = boxes
 
         if classes_path != '':
 
@@ -115,11 +134,14 @@ class coco_2_tfrecord:
 
 
 if __name__ == '__main__':
+    data_set_name = 'val'
     ann_path = os.path.join('F:\\', 'data', 'annotations',
-                            'instances_val2017.json')
-    train_data_path = os.path.join('F:\\', 'data', 'coco2017', 'val2017')
-    data_output_path = os.path.join('F:\\', 'data', 'output', 'train.txt')
+                            'instances_' + data_set_name + '2017.json')
+    train_data_path = os.path.join('F:\\', 'data', 'coco2017',
+                                   data_set_name + '2017')
+    data_output_path = os.path.join('F:\\', 'data', 'output',
+                                    data_set_name + '.txt')
     classes_path = os.path.join('F:\\', 'data', 'output', 'classes.txt')
-    coco_process = coco_2_tfrecord(ann_path, train_data_path, data_output_path,
-                                   classes_path)
+    coco_process = coco_2_txt(ann_path, train_data_path, data_output_path,
+                              classes_path)
     coco_process.process_cocodata()
