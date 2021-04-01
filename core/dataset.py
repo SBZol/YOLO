@@ -11,8 +11,8 @@
 '''
 
 # here put the import lib
-import utils
-from config import cfg
+import core.utils as utils
+from core.config import cfg
 
 import os
 import cv2
@@ -363,7 +363,7 @@ class Dataset(object):
                     np.floor(bbox_xywh_scaled[i, 0:2]).astype(np.int32) + 0.5)
                 anchors_xywh[:, 2:4] = self.anchors[i]
 
-                iou_scale = utils.bbox_iou(bbox_xywh_scaled[i][np.newaxis, :],
+                iou_scale = utils.iou(bbox_xywh_scaled[i][np.newaxis, :],
                                            anchors_xywh)
                 iou.append(iou_scale)
                 iou_mask = iou_scale > 0.3

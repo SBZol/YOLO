@@ -11,11 +11,11 @@
 '''
 
 # here put the import lib
-from dataset import Dataset
-from config import cfg
+from core.dataset import Dataset
+from core.config import cfg
 from core import utils
 from core.utils import freeze_all, unfreeze_all
-from yolov4 import yolov4, decode_train, compute_loss
+from core.yolov4 import yolov4, decode_train, compute_loss
 
 import os
 import shutil
@@ -25,8 +25,7 @@ from absl.flags import FLAGS
 from absl import app, flags, logging
 
 flags.DEFINE_string('model', 'yolov4', 'yolov4')
-flags.DEFINE_string('weights', './scripts/yolov4.weights',
-                    'pretrained weights')
+flags.DEFINE_string('weights', None, 'pretrained weights')
 
 
 def main(_argv):
@@ -41,7 +40,7 @@ def main(_argv):
     log_dir = os.path.join('.', 'log')
 
     is_freeeze = False
-    steps_per_epoch = len(train_set)
+    steps_per_epoch = train_set.num_batchs
     first_stage_epochs = cfg.TRAIN.FISRT_STAGE_EPOCHS
     second_stage_epochs = cfg.TRAIN.SECOND_STAGE_EPOCHS
 
@@ -83,7 +82,7 @@ def main(_argv):
     else:
         if FLAGS.weights.split(".")[len(FLAGS.weights.split(".")) -
                                     1] == "weights":
-            utils.load_weights(model, FLAGS.weights, FLAGS.model, FLAGS.tiny)
+            utils.load_weights(model, FLAGS.weights, FLAGS.model)
         else:
             model.load_weights(FLAGS.weights)
         print('Restoring weights from: %s ... ' % FLAGS.weights)
@@ -184,14 +183,14 @@ def main(_argv):
 
     for epoch in range(first_stage_epochs + second_stage_epochs):
         if epoch < first_stage_epochs:
-            if not isfreeze:
-                isfreeze = True
+            if not is_freeeze:
+                is_freeeze = True
                 for name in freeze_layers:
                     freeze = model.get_layer(name)
                     freeze_all(freeze)
         elif epoch >= first_stage_epochs:
-            if isfreeze:
-                isfreeze = False
+            if is_freeeze:
+                is_freeeze = False
                 for name in freeze_layers:
                     freeze = model.get_layer(name)
                     unfreeze_all(freeze)
@@ -199,8 +198,7 @@ def main(_argv):
             train_step(image_data, target)
         for image_data, target in test_set:
             test_step(image_data, target)
-        model.save_weights(os.path.join('.','yolov4'))
-        
+        model.save_weights(os.path.join('.', 'yolov4'))
 
 
 if __name__ == '__main__':
@@ -208,3 +206,4 @@ if __name__ == '__main__':
         app.run(main)
     except SystemExit:
         pass
+

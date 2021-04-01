@@ -11,7 +11,7 @@
 '''
 
 # here put the import lib
-from common import convolutional, residual_block
+from core.common import convolutional, residual_block
 
 import tensorflow as tf
 

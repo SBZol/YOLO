@@ -204,16 +204,18 @@ class coco_2_txt:
 
 if __name__ == '__main__':
     from config import cfg
-    train_data_path = cfg.TRAIN.DATA_PATH
-    train_ann_path = cfg.TRAIN.ANNOT_PATH
+    train_data_path = os.path.join('F:\\', 'data', 'coco2017', 'train2017')
+    train_ann_path = os.path.join('F:\\', 'data', 'annotations','instances_train2017.json')
 
-    val_data_path = cfg.VAL.DATA_PATH
-    val_ann_path = cfg.VAL.ANNOT_PATH
+    val_data_path = os.path.join('F:\\', 'data', 'coco2017', 'val2017')
+    val_ann_path = os.path.join('F:\\', 'data', 'annotations',
+                                  'instances_val2017.json')
 
-    test_data_path = cfg.TEST.DATA_PATH
-    test_ann_apth = cfg.TEST.ANNOT_PATH
+    test_data_path = os.path.join('F:\\', 'data', 'coco2017', 'test2017')
+    test_ann_apth = os.path.join('F:\\', 'data', 'annotations',
+                                   'instances_test2017.json')
 
-    output_dir_path = cfg.OUTPUT.DIR_PATH
+    output_dir_path = os.path.join('F:\\', 'data', 'output')
 
     coco_process = coco_2_txt(
         [train_ann_path, val_ann_path, test_ann_apth],

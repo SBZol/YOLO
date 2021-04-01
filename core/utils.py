@@ -11,7 +11,7 @@
 '''
 
 # here put the import lib
-from config import cfg
+from core.config import cfg
 
 import cv2
 import threading
@@ -224,22 +224,16 @@ def load_freeze_layer(model='yolov4'):
     return freeze_layouts
 
 
-def load_weights(model, weights_file, model_name='yolov4', is_tiny=False):
-    if is_tiny:
-        if model_name == 'yolov3':
-            layer_size = 13
-            output_pos = [9, 12]
-        else:
-            layer_size = 21
-            output_pos = [17, 20]
+def load_weights(model, weights_file, model_name='yolov4'):
+   
+    if model_name == 'yolov3':
+        layer_size = 75
+        output_pos = [58, 66, 74]
     else:
-        if model_name == 'yolov3':
-            layer_size = 75
-            output_pos = [58, 66, 74]
-        else:
-            layer_size = 110
-            output_pos = [93, 101, 109]
+        layer_size = 110
+        output_pos = [93, 101, 109]
     wf = open(weights_file, 'rb')
+    
     major, minor, revision, seen, _ = np.fromfile(wf, dtype=np.int32, count=5)
 
     j = 0

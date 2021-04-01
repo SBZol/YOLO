@@ -11,8 +11,7 @@
 '''
 
 # here put the import lib
-from activations import mish
-
+from core.activations import mish
 import tensorflow as tf
 
 
