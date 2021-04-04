@@ -1,7 +1,12 @@
 {
-    "python.pythonPath": "F:\\Anaconda\\envs\\DeepLearning\\python.exe",
+    "python.pythonPath": "F:\\Anaconda\\envs\\ML\\python.exe",
     "python.autoComplete.extraPaths": [
-        "F:\\Project\\YOLO"
+        "F:\\Project\\YOLO",
     ],
-    "python.formatting.provider": "autopep8",
+
+    "python.formatting.provider": "yapf",
+    "python.formatting.yapfArgs": ["--style", "{column_limit:120}"], 
+
+    "python.linting.flake8Enabled": true,
+    "python.linting.flake8Args": ["--max-line-length=120"],
 }

@@ -94,7 +94,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
-
+log/
 # Spyder project settings
 .spyderproject
 .spyproject
@@ -112,3 +112,7 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+
+*.png
+*.weights
