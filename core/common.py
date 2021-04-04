@@ -3,7 +3,7 @@
 '''
 @File    :   common.py
 @Time    :   2021/03/23 14:33:06
-@Author  :   Zol 
+@Author  :   Zol
 @Version :   1.0
 @Contact :   sbzol.chen@gmail.com
 @License :   None
@@ -65,7 +65,7 @@ def convolutional(input_layer, filters_shape, downsample=False, activate=True, b
     if bn:
         conv = BatchNormalization()(conv)
 
-    if activate == True:
+    if activate is True:
         if activate == 'leaky':
             conv = tf.nn.leaky_relu(conv, alpha=0.1)
 
@@ -119,9 +119,9 @@ def route_group(input_layer, groups, group_id):
     """拆分张量，并返回需要的子张量列表
 
     Args:
-        input_layer (tensor): 输入的tensor
-        groups ([type]): 分组数 
-        group_id ([type]): 返回的子张量坐标
+        input_layer : 输入的tensor
+        groups : 分组数
+        group_id : 返回的子张量坐标
 
     Returns:
         tensor: 拆分后指定的子张量

@@ -3,7 +3,7 @@
 '''
 @File    :   dataset.py
 @Time    :   2021/03/25 20:42:32
-@Author  :   Zol 
+@Author  :   Zol
 @Version :   1.0
 @Contact :   sbzol.chen@gmail.com
 @License :   None
@@ -12,7 +12,6 @@
 
 # here put the import lib
 import core.utils as utils
-from core.config import cfg
 
 import os
 import cv2
@@ -22,34 +21,46 @@ import tensorflow as tf
 
 
 class Dataset(object):
-    def __init__(self, FLAGS, is_training: bool, dataset_type: str = "converted_coco"):
-        """根据传入的参数获取数据集
+    def __init__(self,
+                 input_size,
+                 batch_size,
+                 anchors,
+                 strides,
+                 annot_path,
+                 num_class,
+                 anchor_per_scale,
+                 data_aug=True):
+        """获取数据集
 
         Args:
-            FLAGS : 参数
-            is_training (bool): 是否在训练  
-            dataset_type (str, optional): 数据集类型. Defaults to "converted_coco".
+            input_size (int): 网络输入大小
+            batch_size (int): batch size
+            anchors (np): 3个不同的scale对应的anchors
+            strides (np): input和ouput的缩放倍数
+            annot_path (str): 解析数据的txt文件路径
+            num_class(int): 所有类别数量
+            anchor_per_scale(int): 每个scale的anchor数量
+            data_aug (bool): 是否需要数据增广 Defaults to True.
         """
+        self.input_size = input_size
 
-        self.strides, self.anchors, NUM_LASS, XYSCALE = utils.load_config(FLAGS)
+        self.batch_size = batch_size
 
-        self.dataset_type = dataset_type
+        self.anchors = anchors
 
-        self.annot_path = (cfg.TRAIN.ANNOT_PATH if is_training else cfg.TEST.ANNOT_PATH)
+        self.strides = strides
 
-        self.input_size = (cfg.TRAIN.INPUT_SIZE if is_training else cfg.TEST.INPUT_SIZE)
+        self.annot_path = annot_path
 
-        self.batch_size = (cfg.TRAIN.BATCH_SIZE if is_training else cfg.TEST.BATCH_SIZE)
+        self.data_aug = data_aug
 
-        self.data_aug = (cfg.TRAIN.DATA_AUG if is_training else cfg.TEST.DATA_AUG)
+        self.input_sizes = input_size
 
-        self.train_input_sizes = cfg.TRAIN.INPUT_SIZE
+        self.output_sizes = self.input_size // self.strides
 
-        self.classes = utils.read_class_names(cfg.YOLO.CLASSES)
+        self.num_classes = num_class
 
-        self.num_classes = len(self.classes)
-
-        self.anchor_per_scale = cfg.YOLO.ANCHOR_PER_SCALE
+        self.anchor_per_scale = anchor_per_scale
 
         self.max_bbox_per_scale = 150
 
@@ -69,32 +80,8 @@ class Dataset(object):
         """
         with open(self.annot_path, "r") as f:
             txt = f.readlines()
-            if self.dataset_type == "converted_coco":
-                annotations = [line.strip() for line in txt if len(line.strip().split()[1:]) != 0]
-            elif self.dataset_type == "yolo":
-                annotations = []
-                for line in txt:
-                    image_path = line.strip()
-                    root, _ = os.path.splitext(image_path)
-                    with open(root + ".txt") as fd:
-                        boxes = fd.readlines()
-                        string = ""
-                        for box in boxes:
-                            box = box.strip()
-                            box = box.split()
-                            class_num = int(box[0])
-                            center_x = float(box[1])
-                            center_y = float(box[2])
-                            half_width = float(box[3]) / 2
-                            half_height = float(box[4]) / 2
-                            string += " {},{},{},{},{}".format(
-                                center_x - half_width,
-                                center_y - half_height,
-                                center_x + half_width,
-                                center_y + half_height,
-                                class_num,
-                            )
-                        annotations.append(image_path + string)
+
+            annotations = [line.strip() for line in txt if len(line.strip().split()[1:]) != 0]
 
         np.random.shuffle(annotations)
         return annotations
@@ -104,15 +91,12 @@ class Dataset(object):
 
     def __next__(self):
         with tf.device("/cpu:0"):
-            # self.train_input_size = random.choice(self.train_input_sizes)
-            self.train_input_size = cfg.TRAIN.INPUT_SIZE
-            self.train_output_sizes = self.train_input_size // self.strides
 
             batch_image = np.zeros(
                 (
                     self.batch_size,
-                    self.train_input_size,
-                    self.train_input_size,
+                    self.input_size,
+                    self.input_size,
                     3,
                 ),
                 dtype=np.float32,
@@ -121,8 +105,8 @@ class Dataset(object):
             batch_label_sbbox = np.zeros(
                 (
                     self.batch_size,
-                    self.train_output_sizes[0],
-                    self.train_output_sizes[0],
+                    self.output_sizes[0],
+                    self.output_sizes[0],
                     self.anchor_per_scale,
                     5 + self.num_classes,
                 ),
@@ -131,8 +115,8 @@ class Dataset(object):
             batch_label_mbbox = np.zeros(
                 (
                     self.batch_size,
-                    self.train_output_sizes[1],
-                    self.train_output_sizes[1],
+                    self.output_sizes[1],
+                    self.output_sizes[1],
                     self.anchor_per_scale,
                     5 + self.num_classes,
                 ),
@@ -141,8 +125,8 @@ class Dataset(object):
             batch_label_lbbox = np.zeros(
                 (
                     self.batch_size,
-                    self.train_output_sizes[2],
-                    self.train_output_sizes[2],
+                    self.output_sizes[2],
+                    self.output_sizes[2],
                     self.anchor_per_scale,
                     5 + self.num_classes,
                 ),
@@ -285,7 +269,7 @@ class Dataset(object):
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)  # 颜色空间转换函数，BGR转换成RGB
         image, bboxes = utils.image_preprocess(
             np.copy(image),
-            [self.train_input_size, self.train_input_size],
+            [self.input_size, self.input_size],
             np.copy(bboxes),
         )
         return image, bboxes
@@ -293,8 +277,8 @@ class Dataset(object):
     def preprocess_true_boxes(self, bboxes):
         label = [
             np.zeros((
-                self.train_output_sizes[i],
-                self.train_output_sizes[i],
+                self.output_sizes[i],
+                self.output_sizes[i],
                 self.anchor_per_scale,
                 5 + self.num_classes,
             )) for i in range(3)

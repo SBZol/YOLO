@@ -3,7 +3,7 @@
 '''
 @File    :   yolov4.py
 @Time    :   2021/03/24 15:58:21
-@Author  :   Zol 
+@Author  :   Zol
 @Version :   1.0
 @Contact :   sbzol.chen@gmail.com
 @License :   None
@@ -19,18 +19,18 @@ import numpy as np
 import tensorflow as tf
 
 
-def yolov4(input_layer, NUM_CLASS):
+def Yolo_v4(input_layer, num_class):
     """获取yolov4网咯
 
     Args:
         input_layer : 输入层
-        NUM_CLASS : 类别数量
+        num_class : 类别数量
 
     Returns:
         yolo_v4
     """
 
-    ## PANet - Path Agrregate Network
+    # PANet - Path Agrregate Network
     route_1, route_2, conv = cspdarknet53(input_layer)
 
     # up
@@ -64,7 +64,7 @@ def yolov4(input_layer, NUM_CLASS):
     conv = convolutional(input_layer=conv, filters_shape=(3, 3, 128, 256))
 
     conv_sbbox = convolutional(input_layer=conv,
-                               filters_shape=(1, 1, 256, 3 * (NUM_CLASS + 5)),
+                               filters_shape=(1, 1, 256, 3 * (num_class + 5)),
                                activate=False,
                                bn=False)
 
@@ -82,7 +82,7 @@ def yolov4(input_layer, NUM_CLASS):
     conv = convolutional(input_layer=conv, filters_shape=(3, 3, 256, 512))
 
     conv_mbbox = convolutional(input_layer=conv,
-                               filters_shape=(1, 1, 512, 3 * (NUM_CLASS + 5)),
+                               filters_shape=(1, 1, 512, 3 * (num_class + 5)),
                                activate=False,
                                bn=False)
 
@@ -98,22 +98,22 @@ def yolov4(input_layer, NUM_CLASS):
     conv = convolutional(input_layer=conv, filters_shape=(3, 3, 512, 1024))
 
     conv_lbbox = convolutional(input_layer=conv,
-                               filters_shape=(1, 1, 1024, 3 * (NUM_CLASS + 5)),
+                               filters_shape=(1, 1, 1024, 3 * (num_class + 5)),
                                activate=False,
                                bn=False)
 
     return [conv_sbbox, conv_mbbox, conv_lbbox]
 
 
-def decode_train(conv_output, output_size, NUM_CLASS, STRIDES, ANCHORS, i=0, XYSCALE=[1, 1, 1]):
+def decode_train(conv_output, output_size, num_class, strides, anchors, i=0, xx_scale=[1, 1, 1]):
     """处理yolov4输出的3个fearture得到输出分类层
 
     Args:
         conv_output : yolov4输出的特征层
         output_size : 输出特征的大小
-        NUM_CLASS : 分类数
-        STRIDES : 输出特征到输出特征的缩小倍数
-        ANCHORS : 3个不同的scale对应的anchors
+        num_class : 分类数
+        strides : 输出特征到输出特征的缩小倍数
+        anchors : 3个不同的scale对应的anchors
         i : 3个scale的index. Defaults to 0.
         XYSCALE : 用于计算pred_xy，暂时没搞懂干什么用. Defaults to [1, 1, 1].
 
@@ -121,10 +121,10 @@ def decode_train(conv_output, output_size, NUM_CLASS, STRIDES, ANCHORS, i=0, XYS
         ouput_layer
     """
 
-    conv_output = tf.reshape(conv_output, (tf.shape(conv_output)[0], output_size, output_size, 3, 5 + NUM_CLASS))
+    conv_output = tf.reshape(conv_output, (tf.shape(conv_output)[0], output_size, output_size, 3, 5 + num_class))
 
     # 从最后一个维度分离张量，得到4个张量
-    conv_raw_dxdy, conv_raw_dwdh, conv_raw_conf, conv_raw_prob = tf.split(conv_output, (2, 2, 1, NUM_CLASS), -1)
+    conv_raw_dxdy, conv_raw_dwdh, conv_raw_conf, conv_raw_prob = tf.split(conv_output, (2, 2, 1, num_class), -1)
 
     xy_grid = tf.meshgrid(tf.range(output_size),
                           tf.range(output_size))  # [(output_size,output_size), (output_size,output_size)]
@@ -140,24 +140,23 @@ def decode_train(conv_output, output_size, NUM_CLASS, STRIDES, ANCHORS, i=0, XYS
 
     xy_grid = tf.cast(xy_grid, tf.float32)  # 转换数据类型
 
-    pred_xy = ((tf.sigmoid(conv_raw_dxdy) * XYSCALE[i]) - 0.5 * (XYSCALE[i] - 1) + xy_grid) * \
-              STRIDES[i]
-    pred_wh = (tf.exp(conv_raw_dwdh) * ANCHORS[i])
+    pred_xy = ((tf.sigmoid(conv_raw_dxdy) * xx_scale[i]) - 0.5 * (xx_scale[i] - 1) + xy_grid) * strides[i]
+    pred_wh = (tf.exp(conv_raw_dwdh) * anchors[i])
 
     pred_xywh = tf.concat([pred_xy, pred_wh], -1)  # (None, output_size, output_size, 3, 4)
     pred_conf = tf.sigmoid(conv_raw_conf)  # (None, output_size, output_size, 3, 1)
-    pred_prob = tf.sigmoid(conv_raw_prob)  # (None, output_size, output_size, 3, NUM_CLASS)
+    pred_prob = tf.sigmoid(conv_raw_prob)  # (None, output_size, output_size, 3, num_class)
 
     return tf.concat([pred_xywh, pred_conf, pred_prob], -1)
 
 
-def compute_loss(pred, conv, label, bboxes, STRIDES, NUM_CLASS, IOU_LOSS_THRESH, i=0):
+def compute_loss(pred, conv, label, bboxes, strides, num_class, iou_loss_thresh, i=0):
 
     conv_shape = tf.shape(conv)
     batch_size = conv_shape[0]
     output_size = conv_shape[1]
-    input_size = STRIDES[i] * output_size
-    conv = tf.reshape(conv, (batch_size, output_size, output_size, 3, 5 + NUM_CLASS))
+    input_size = strides[i] * output_size
+    conv = tf.reshape(conv, (batch_size, output_size, output_size, 3, 5 + num_class))
 
     conv_raw_conf = conv[:, :, :, :, 4:5]
     conv_raw_prob = conv[:, :, :, :, 5:]
@@ -178,7 +177,7 @@ def compute_loss(pred, conv, label, bboxes, STRIDES, NUM_CLASS, IOU_LOSS_THRESH,
     iou = utils.iou(pred_xywh[:, :, :, :, np.newaxis, :], bboxes[:, np.newaxis, np.newaxis, np.newaxis, :, :])
     max_iou = tf.expand_dims(tf.reduce_max(iou, axis=-1), axis=-1)
 
-    respond_bgd = (1.0 - respond_bbox) * tf.cast(max_iou < IOU_LOSS_THRESH, tf.float32)
+    respond_bgd = (1.0 - respond_bbox) * tf.cast(max_iou < iou_loss_thresh, tf.float32)
 
     conf_focal = tf.pow(respond_bbox - pred_conf, 2)
 

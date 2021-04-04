@@ -3,7 +3,7 @@
 '''
 @File    :   utils.py
 @Time    :   2021/03/25 18:24:40
-@Author  :   Zol 
+@Author  :   Zol
 @Version :   1.0
 @Contact :   sbzol.chen@gmail.com
 @License :   None
@@ -11,15 +11,13 @@
 '''
 
 # here put the import lib
-from core.config import cfg
-
 import cv2
 import threading
 import numpy as np
 import tensorflow as tf
 
 
-class myThread(threading.Thread):
+class MyThread(threading.Thread):
     def __init__(self, threadID, name, process_func, **kwargs):
         threading.Thread.__init__(self)
         self.threadID = threadID
@@ -153,33 +151,11 @@ def process_bboxes(bboxes1, bboxes2, need_enclose=True):
     return inter_area, union_area, enclose_section
 
 
-def load_config(FLAGS):
-    """读取config数据
-
-    Args:
-        FLAGS : 输入的flags数据
-
-    Returns:
-        STRIDES, ANCHORS, NUM_CLASS, XYSCALE
-    """
-    STRIDES = np.array(cfg.YOLO.STRIDES)
-
-    anchors = np.array(cfg.YOLO.ANCHORS)
-
-    ANCHORS = np.reshape(anchors, (3, 3, 2))
-
-    XYSCALE = cfg.YOLO.XYSCALE
-
-    NUM_CLASS = len(read_class_names(cfg.YOLO.CLASSES))
-
-    return STRIDES, ANCHORS, NUM_CLASS, XYSCALE
-
-
 def read_class_names(class_file_paht):
     """获取txt文件中的所有分类名
 
     Args:
-        class_file_name (str): 存储类别名的txt文件  
+        class_file_name (str): 存储类别名的txt文件
 
     Returns:
         [dict]: 存储类别名的字典
@@ -266,12 +242,12 @@ def load_weights(model, weights_file, model_name='yolov4'):
 def freeze_all(model, frozen=True):
     model.trainable = not frozen
     if isinstance(model, tf.keras.Model):
-        for l in model.layers:
-            freeze_all(l, frozen)
+        for layer in model.layers:
+            freeze_all(layer, frozen)
 
 
 def unfreeze_all(model, frozen=False):
     model.trainable = not frozen
     if isinstance(model, tf.keras.Model):
-        for l in model.layers:
-            unfreeze_all(l, frozen)
+        for layer in model.layers:
+            unfreeze_all(layer, frozen)

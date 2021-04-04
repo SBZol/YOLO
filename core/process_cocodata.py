@@ -3,7 +3,7 @@
 '''
 @File    :   procecc_cocodata.py
 @Time    :   2021/03/29 21:52:20
-@Author  :   Zol 
+@Author  :   Zol
 @Version :   1.0
 @Contact :   sbzol.chen@gmail.com
 @License :   None
@@ -11,18 +11,7 @@
 '''
 
 # here put the import lib
-from config import cfg
-from utils import myThread
-
 import os
-import sys
-import math
-import queue
-import threading
-import time
-
-import cv2
-import tensorflow as tf
 from pycocotools.coco import COCO
 
 
@@ -38,7 +27,7 @@ class coco_2_txt:
         Args:
             ann_paths (list): coco ann数据路径 ([train,val,test])
             data_paths (list): coco 训练数据路径 ([train,val,test])
-            output_dir_path (str): 数据信息输出文件夹路径  
+            output_dir_path (str): 数据信息输出文件夹路径
         """
 
         self.train_data_path = data_paths[0]
@@ -69,12 +58,12 @@ class coco_2_txt:
             c_name = c['name']
             self.categories_dict[c_id] = c_name  # 存储coco的分类id，和对应的分类名称
 
-        image_ids = coco.getImgIds()
+        # image_ids = coco.getImgIds()
 
         data_img_paths = os.listdir(self.val_data_path)
 
         for item in data_img_paths:
-            boxes = []
+            # boxes = []
             img_name = item.split('\\')[-1]
             imgid = int(img_name[0:-4])
             annIds = coco.getAnnIds(imgIds=imgid, iscrowd=None)
@@ -177,7 +166,6 @@ class coco_2_txt:
 
 
 if __name__ == '__main__':
-    from config import cfg
     train_data_path = os.path.join('F:\\', 'data', 'coco2017', 'train2017')
     train_ann_path = os.path.join('F:\\', 'data', 'annotations', 'instances_train2017.json')
 

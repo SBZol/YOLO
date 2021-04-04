@@ -3,7 +3,7 @@
 '''
 @File    :   activations.py
 @Time    :   2021/03/23 16:12:06
-@Author  :   Zol 
+@Author  :   Zol
 @Version :   1.0
 @Contact :   sbzol.chen@gmail.com
 @License :   None

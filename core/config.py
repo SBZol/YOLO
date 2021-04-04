@@ -3,7 +3,7 @@
 '''
 @File    :   config.py
 @Time    :   2021/03/24 18:47:42
-@Author  :   Zol 
+@Author  :   Zol
 @Version :   1.0
 @Contact :   sbzol.chen@gmail.com
 @License :   None
@@ -42,7 +42,6 @@ __C.TRAIN.ANNOT_PATH = os.path.join('F:\\', 'data', 'output', 'train2017.txt')
 
 __C.TRAIN.BATCH_SIZE = 4
 __C.TRAIN.INPUT_SIZE = 416
-__C.TRAIN.DATA_AUG = True
 __C.TRAIN.LR_INIT = 1e-3  # 初始的学习率
 __C.TRAIN.LR_END = 1e-6  # 学习率的最大值
 __C.TRAIN.WARMUP_EPOCHS = 1  # 热身epochs数
@@ -60,7 +59,6 @@ __C.TEST = edict()
 __C.TEST.ANNOT_PATH = os.path.join('F:\\', 'data', 'output', 'test2017.txt')
 __C.TEST.BATCH_SIZE = 4
 __C.TEST.INPUT_SIZE = 416
-__C.TEST.DATA_AUG = False
-# __C.TEST.DECTECTED_IMAGE_PATH = "./data/detection/"
+# __C.TEST.DECTECTED_IMAGE_PATH = ""
 # __C.TEST.SCORE_THRESHOLD      = 0.25
 # __C.TEST.IOU_THRESHOLD        = 0.5

@@ -3,7 +3,7 @@
 '''
 @File    :   backbone.py
 @Time    :   2021/03/23 18:14:42
-@Author  :   Zol 
+@Author  :   Zol
 @Version :   1.0
 @Contact :   sbzol.chen@gmail.com
 @License :   None
@@ -21,16 +21,15 @@ def cspdarknet53(input_data):
 
     Args:
         input_data : 网络输入
-        
     Returns:
         (tensor): 返回3条支路的输出
     """
 
-    ## head
+    # head
     input_data = convolutional(input_data, (3, 3, 3, 32), activate_type='mish')
     input_data = convolutional(input_data, (3, 3, 32, 64), downsample=True, activate_type='mish')  # downsample_0
 
-    ## cross stage partial 1
+    # cross stage partial 1
     route = input_data
     route = convolutional(route, (1, 1, 64, 64), activate_type='mish')  # part 1_1
 
@@ -42,7 +41,7 @@ def cspdarknet53(input_data):
     input_data = convolutional(input_data, (1, 1, 128, 64), activate_type='mish')  # transition_1_2
     input_data = convolutional(input_data, (3, 3, 64, 128), downsample=True, activate_type='mish')  # downsample_1
 
-    ## cross stage partial 2
+    # cross stage partial 2
     route = input_data
     route = convolutional(route, (1, 1, 128, 64), activate_type='mish')  # part 2_1
 
@@ -59,7 +58,7 @@ def cspdarknet53(input_data):
     input_data = convolutional(input_data, (1, 1, 128, 128), activate_type='mish')  # transition_2_2
     input_data = convolutional(input_data, (3, 3, 128, 256), downsample=True, activate_type='mish')  # downsample_2
 
-    ## cross stage partial 3
+    # cross stage partial 3
     route = input_data
     route = convolutional(input_data, (1, 1, 256, 128), activate_type='mish')  # part 3_1
 
@@ -78,7 +77,7 @@ def cspdarknet53(input_data):
 
     input_data = convolutional(input_data, (3, 3, 256, 512), downsample=True, activate_type='mish')  # downsample_3
 
-    ## cross stage partial 4
+    # cross stage partial 4
     route = input_data
     route = convolutional(route, (1, 1, 512, 256), activate_type='mish')  # part 4_1
 
@@ -97,7 +96,7 @@ def cspdarknet53(input_data):
 
     input_data = convolutional(input_data, (3, 3, 512, 1024), downsample=True, activate_type='mish')  # downsample_4
 
-    ## cross stage partial 5
+    # cross stage partial 5
     route = input_data
     route = convolutional(route, (1, 1, 1024, 512), activate_type='mish')  # part 5_1
 
@@ -112,12 +111,12 @@ def cspdarknet53(input_data):
     input_data = tf.concat([input_data, route], -1)  # concat_5
     input_data = convolutional(input_data, (1, 1, 1024, 1024), activate_type='mish')  # transition_5_2
 
-    ## tail - Conv x3
+    # tail - Conv x3
     input_data = convolutional(input_data, (1, 1, 1024, 512))
     input_data = convolutional(input_data, (3, 3, 512, 1024))
     input_data = convolutional(input_data, (1, 1, 1024, 512))
 
-    ## SPP - Spatial Pyramid Pooling
+    # SPP - Spatial Pyramid Pooling
     max_pooling1 = tf.nn.max_pool(input_data, ksize=13, padding='SAME', strides=1)
     max_pooling2 = tf.nn.max_pool(input_data, ksize=9, padding='SAME', strides=1)
     max_pooling3 = tf.nn.max_pool(input_data, ksize=5, padding='SAME', strides=1)
@@ -134,7 +133,7 @@ def darknet53(input_data):
     """darknet 53
 
     Args:
-        input_data (tendor): 
+        input_data (tendor): input_data
 
     Returns:
         (tensor): 返回3条支路的输出
