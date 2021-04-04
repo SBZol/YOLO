@@ -44,9 +44,7 @@ def iou(bboxes1, bboxes2):
         [tf]: IoU
     """
 
-    inter_area, union_area, _ = process_bboxes(bboxes1,
-                                               bboxes2,
-                                               need_enclose=False)
+    inter_area, union_area, _ = process_bboxes(bboxes1, bboxes2, need_enclose=False)
     iou = tf.math.divide_no_nan(inter_area, union_area)
 
     return iou
@@ -121,7 +119,7 @@ def process_bboxes(bboxes1, bboxes2, need_enclose=True):
     bboxes1_area = bboxes1[..., 2] * bboxes1[..., 3]
     bboxes2_area = bboxes2[..., 2] * bboxes2[..., 3]
 
-    bboxes1_coor = tf.concat(
+    bboxes1_coor = tf.concat(  # 计算box的左下和右上角坐标
         [
             bboxes1[..., :2] - bboxes1[..., 2:] * 0.5,
             bboxes1[..., :2] + bboxes1[..., 2:] * 0.5,
@@ -136,6 +134,7 @@ def process_bboxes(bboxes1, bboxes2, need_enclose=True):
         -1,
     )
 
+    # 根据上面算出的俩box的角坐标，求出交集区域的左下和右上角坐标
     left_up = tf.maximum(bboxes1_coor[..., :2], bboxes2_coor[..., :2])
     right_down = tf.minimum(bboxes1_coor[..., 2:], bboxes2_coor[..., 2:])
 
@@ -145,11 +144,9 @@ def process_bboxes(bboxes1, bboxes2, need_enclose=True):
     union_area = bboxes1_area + bboxes2_area - inter_area
 
     enclose_section = None
-    if need_enclose:
-        enclose_left_up = tf.minimum(bboxes1_coor[..., :2],
-                                     bboxes2_coor[..., :2])
-        enclose_right_down = tf.maximum(bboxes1_coor[..., 2:],
-                                        bboxes2_coor[..., 2:])
+    if need_enclose:  # 求外接矩形的长和宽(section)
+        enclose_left_up = tf.minimum(bboxes1_coor[..., :2], bboxes2_coor[..., :2])
+        enclose_right_down = tf.maximum(bboxes1_coor[..., 2:], bboxes2_coor[..., 2:])
 
         enclose_section = enclose_right_down - enclose_left_up
 
@@ -167,9 +164,9 @@ def load_config(FLAGS):
     """
     STRIDES = np.array(cfg.YOLO.STRIDES)
 
-    anchers = np.array(cfg.YOLO.ANCHORS)
+    anchors = np.array(cfg.YOLO.ANCHORS)
 
-    ANCHORS = np.reshape(anchers, (3, 3, 2))
+    ANCHORS = np.reshape(anchors, (3, 3, 2))
 
     XYSCALE = cfg.YOLO.XYSCALE
 
@@ -196,16 +193,16 @@ def read_class_names(class_file_paht):
 
 def image_preprocess(image, target_size, gt_boxes=None):
 
-    ih, iw    = target_size
-    h,  w, _  = image.shape
+    ih, iw = target_size
+    h, w, _ = image.shape
 
-    scale = min(iw/w, ih/h)
-    nw, nh  = int(scale * w), int(scale * h)
+    scale = min(iw / w, ih / h)
+    nw, nh = int(scale * w), int(scale * h)
     image_resized = cv2.resize(image, (nw, nh))
 
     image_paded = np.full(shape=[ih, iw, 3], fill_value=128.0)
-    dw, dh = (iw - nw) // 2, (ih-nh) // 2
-    image_paded[dh:nh+dh, dw:nw+dw, :] = image_resized
+    dw, dh = (iw - nw) // 2, (ih - nh) // 2
+    image_paded[dh:nh + dh, dw:nw + dw, :] = image_resized
     image_paded = image_paded / 255.
 
     if gt_boxes is None:
@@ -215,17 +212,10 @@ def image_preprocess(image, target_size, gt_boxes=None):
         gt_boxes[:, [0, 2]] = gt_boxes[:, [0, 2]] * scale + dw
         gt_boxes[:, [1, 3]] = gt_boxes[:, [1, 3]] * scale + dh
         return image_paded, gt_boxes
-    
-    
-def load_freeze_layer(model='yolov4'):
-    if model == 'yolov4':
-        freeze_layouts = ['conv2d_93', 'conv2d_101', 'conv2d_109']
-    
-    return freeze_layouts
 
 
 def load_weights(model, weights_file, model_name='yolov4'):
-   
+
     if model_name == 'yolov3':
         layer_size = 75
         output_pos = [58, 66, 74]
@@ -233,13 +223,13 @@ def load_weights(model, weights_file, model_name='yolov4'):
         layer_size = 110
         output_pos = [93, 101, 109]
     wf = open(weights_file, 'rb')
-    
+
     major, minor, revision, seen, _ = np.fromfile(wf, dtype=np.int32, count=5)
 
     j = 0
     for i in range(layer_size):
-        conv_layer_name = 'conv2d_%d' %i if i > 0 else 'conv2d'
-        bn_layer_name = 'batch_normalization_%d' %j if j > 0 else 'batch_normalization'
+        conv_layer_name = 'conv2d_%d' % i if i > 0 else 'conv2d'
+        bn_layer_name = 'batch_normalization_%d' % j if j > 0 else 'batch_normalization'
 
         conv_layer = model.get_layer(conv_layer_name)
         filters = conv_layer.filters
@@ -260,6 +250,7 @@ def load_weights(model, weights_file, model_name='yolov4'):
         conv_shape = (filters, in_dim, k_size, k_size)
         conv_weights = np.fromfile(wf, dtype=np.float32, count=np.product(conv_shape))
         # tf shape (height, width, in_dim, out_dim)
+
         conv_weights = conv_weights.reshape(conv_shape).transpose([2, 3, 1, 0])
 
         if i not in output_pos:
@@ -270,14 +261,15 @@ def load_weights(model, weights_file, model_name='yolov4'):
 
     # assert len(wf.read()) == 0, 'failed to read all data'
     wf.close()
-    
-    
+
+
 def freeze_all(model, frozen=True):
     model.trainable = not frozen
     if isinstance(model, tf.keras.Model):
         for l in model.layers:
             freeze_all(l, frozen)
-            
+
+
 def unfreeze_all(model, frozen=False):
     model.trainable = not frozen
     if isinstance(model, tf.keras.Model):

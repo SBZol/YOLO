@@ -30,12 +30,7 @@ class BatchNormalization(tf.keras.layers.BatchNormalization):
         return super().call(x, training)
 
 
-def convolutional(input_layer,
-                  filters_shape,
-                  downsample=False,
-                  activate=True,
-                  bn=True,
-                  activate_type='leaky'):
+def convolutional(input_layer, filters_shape, downsample=False, activate=True, bn=True, activate_type='leaky'):
     """[封装的卷积函数]
 
     Args:
@@ -51,23 +46,21 @@ def convolutional(input_layer,
     """
 
     if downsample:
-        input_layer = tf.keras.layers.ZeroPadding2D(
-            ((1, 0), (1, 0)))(input_layer)
+        input_layer = tf.keras.layers.ZeroPadding2D(((1, 0), (1, 0)))(input_layer)
         padding = 'valid'
         stride = 2
     else:
         stride = 1
         padding = 'same'
 
-    conv = tf.keras.layers.Conv2D(
-        filters=filters_shape[-1],
-        kernel_size=filters_shape[0],
-        strides=stride,
-        padding=padding,
-        use_bias=not bn,
-        kernel_regularizer=tf.keras.regularizers.l2(l2=0.0005),
-        kernel_initializer=tf.random_normal_initializer(stddev=0.01),
-        bias_initializer=tf.constant_initializer(0.))(input_layer)
+    conv = tf.keras.layers.Conv2D(filters=filters_shape[-1],
+                                  kernel_size=filters_shape[0],
+                                  strides=stride,
+                                  padding=padding,
+                                  use_bias=not bn,
+                                  kernel_regularizer=tf.keras.regularizers.l2(l2=0.0005),
+                                  kernel_initializer=tf.random_normal_initializer(stddev=0.01),
+                                  bias_initializer=tf.constant_initializer(0.))(input_layer)
 
     if bn:
         conv = BatchNormalization()(conv)
@@ -82,10 +75,7 @@ def convolutional(input_layer,
     return conv
 
 
-def residual_block(input_layer,
-                   input_channel,
-                   filter_nums,
-                   activate_type='leaky'):
+def residual_block(input_layer, input_channel, filter_nums, activate_type='leaky'):
     """残差模块
 
     Args:
@@ -103,12 +93,8 @@ def residual_block(input_layer,
     filter_num1 = filter_nums[0]
     filter_num2 = filter_nums[1]
 
-    conv = convolutional(input_layer,
-                         filters_shape=(1, 1, input_channel, filter_num1),
-                         activate_type=activate_type)
-    conv = convolutional(conv,
-                         filters_shape=(3, 3, filter_num1, filter_num2),
-                         activate_type=activate_type)
+    conv = convolutional(input_layer, filters_shape=(1, 1, input_channel, filter_num1), activate_type=activate_type)
+    conv = convolutional(conv, filters_shape=(3, 3, filter_num1, filter_num2), activate_type=activate_type)
 
     res_output = short_cut + conv  # 残差连接
 
@@ -124,9 +110,8 @@ def upsample(input_layer):
     Returns:
         tensor: resize后的图像
     """
-    upsample_layer = tf.image.resize(
-        input_layer, (input_layer.shape[1] * 2, input_layer.shape[2] * 2),
-        method='bilinear')
+    upsample_layer = tf.image.resize(input_layer, (input_layer.shape[1] * 2, input_layer.shape[2] * 2),
+                                     method='bilinear')
     return upsample_layer
 
 

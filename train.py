@@ -25,14 +25,13 @@ from absl.flags import FLAGS
 from absl import app, flags, logging
 
 flags.DEFINE_string('model', 'yolov4', 'yolov4')
-flags.DEFINE_string('weights', None, 'pretrained weights')
+flags.DEFINE_string('weights', os.path.join('.', 'yolo.weights'), 'pretrained weights')
 
 
 def main(_argv):
     pysical_devices = tf.config.experimental.list_physical_devices("GPU")
     if len(pysical_devices) > 0:
-        tf.config.experimental.set_memory_growth(pysical_devices[0],
-                                                 True)  # 内存按需分配
+        tf.config.experimental.set_memory_growth(pysical_devices[0], True)  # 内存按需分配
 
     train_set = Dataset(FLAGS, is_training=True)
     test_set = Dataset(FLAGS, is_training=False)
@@ -45,34 +44,39 @@ def main(_argv):
     second_stage_epochs = cfg.TRAIN.SECOND_STAGE_EPOCHS
 
     global_steps = tf.Variable(1, trainable=False, dtype=tf.int64)
-    warmup_steps = cfg.TRAIN.WARMUP_EPOCHS * steps_per_epoch
+    warmup_steps = cfg.TRAIN.WARMUP_EPOCHS * steps_per_epoch  # 预热学习率的steps数
     total_steps = (first_stage_epochs + second_stage_epochs) * steps_per_epoch
 
     STRIDES, ANCHORS, NUM_CLASS, XYSCALE = utils.load_config(FLAGS)
     IOU_LOSS_THRESH = cfg.YOLO.IOU_LOSS_THRESH  # iou阈值
 
     # 输入层
-    input_layer = tf.keras.layers.Input(
-        [cfg.TRAIN.INPUT_SIZE, cfg.TRAIN.INPUT_SIZE, 3])
+    input_layer = tf.keras.layers.Input([cfg.TRAIN.INPUT_SIZE, cfg.TRAIN.INPUT_SIZE, 3])
 
-    freeze_layers = utils.load_freeze_layer(FLAGS.model)
+    freeze_layers = ['conv2d_93', 'conv2d_101', 'conv2d_109']
 
     feature_maps = yolov4(input_layer, NUM_CLASS)
 
     bbox_tensors = []
-    for i, fm in enumerate(feature_maps):
+    for i, fm in enumerate(feature_maps): # 处理3个feature得到最后的输出分类层
         if i == 0:
-            bbox_tensor = decode_train(fm, cfg.TRAIN.INPUT_SIZE // 8,
-                                       NUM_CLASS, STRIDES, ANCHORS, i, XYSCALE)
+            bbox_tensor = decode_train(fm, cfg.TRAIN.INPUT_SIZE // 8, NUM_CLASS, STRIDES, ANCHORS, i, XYSCALE)
         elif i == 1:
-            bbox_tensor = decode_train(fm, cfg.TRAIN.INPUT_SIZE // 16,
-                                       NUM_CLASS, STRIDES, ANCHORS, i, XYSCALE)
+            bbox_tensor = decode_train(fm, cfg.TRAIN.INPUT_SIZE // 16, NUM_CLASS, STRIDES, ANCHORS, i, XYSCALE)
         else:
-            bbox_tensor = decode_train(fm, cfg.TRAIN.INPUT_SIZE // 32,
-                                       NUM_CLASS, STRIDES, ANCHORS, i, XYSCALE)
+            bbox_tensor = decode_train(fm, cfg.TRAIN.INPUT_SIZE // 32, NUM_CLASS, STRIDES, ANCHORS, i, XYSCALE)
         bbox_tensors.append(fm)
         bbox_tensors.append(bbox_tensor)
+        
     model = tf.keras.Model(input_layer, bbox_tensors)
+
+    tf.keras.utils.plot_model(model,
+                              to_file='model3.png',
+                              show_shapes=True,
+                              show_layer_names=True,
+                              rankdir='TB',
+                              dpi=900,
+                              expand_nested=True)
 
     model.summary()
 
@@ -80,8 +84,7 @@ def main(_argv):
         print("Training from scratch")
 
     else:
-        if FLAGS.weights.split(".")[len(FLAGS.weights.split(".")) -
-                                    1] == "weights":
+        if FLAGS.weights.split(".")[len(FLAGS.weights.split(".")) - 1] == "weights":
             utils.load_weights(model, FLAGS.weights, FLAGS.model)
         else:
             model.load_weights(FLAGS.weights)
@@ -95,6 +98,12 @@ def main(_argv):
     writer = tf.summary.create_file_writer(log_dir)
 
     def train_step(image_data, target):
+        """训练步骤
+
+        Args:
+            image_data : 图片数据
+            target : label和bboxes的信息
+        """
         with tf.GradientTape() as tape:
             pred_result = model(image_data, training=True)
             giou_loss = conf_loss = prob_loss = 0
@@ -117,44 +126,40 @@ def main(_argv):
 
             gradients = tape.gradient(total_loss, model.trainable_variables)
 
-            optimizer.apply_gradients(zip(gradients,
-                                          model.trainable_variables))
+            optimizer.apply_gradients(zip(gradients, model.trainable_variables))
 
-            tf.print(
-                "=> STEP %4d/%4d   lr: %.6f   giou_loss: %4.2f   conf_loss: %4.2f   "
-                "prob_loss: %4.2f   total_loss: %4.2f" %
-                (global_steps, total_steps, optimizer.lr.numpy(), giou_loss,
-                 conf_loss, prob_loss, total_loss))
+            tf.print("=> STEP %4d/%4d   lr: %.6f   giou_loss: %4.2f   conf_loss: %4.2f   "
+                     "prob_loss: %4.2f   total_loss: %4.2f" %
+                     (global_steps, total_steps, optimizer.lr.numpy(), giou_loss, conf_loss, prob_loss, total_loss))
 
-            # update learning rate
+            # 更新学习率
             global_steps.assign_add(1)
-            if global_steps < warmup_steps:
+
+            if global_steps < warmup_steps:  # 先以小的学习率热身，慢慢随着setp的增大而增大
                 lr = global_steps / warmup_steps * cfg.TRAIN.LR_INIT
+
             else:
-                lr = cfg.TRAIN.LR_END + 0.5 * (
-                    cfg.TRAIN.LR_INIT - cfg.TRAIN.LR_END) * ((1 + tf.cos(
-                        (global_steps - warmup_steps) /
-                        (total_steps - warmup_steps) * np.pi)))
+                lr = cfg.TRAIN.LR_END + 0.5 * (cfg.TRAIN.LR_INIT - cfg.TRAIN.LR_END) * ((1 + tf.cos(
+                    (global_steps - warmup_steps) / (total_steps - warmup_steps) * np.pi)))
+
             optimizer.lr.assign(lr.numpy())
 
             # writing summary data
             with writer.as_default():
                 tf.summary.scalar("lr", optimizer.lr, step=global_steps)
-                tf.summary.scalar("loss/total_loss",
-                                  total_loss,
-                                  step=global_steps)
-                tf.summary.scalar("loss/giou_loss",
-                                  giou_loss,
-                                  step=global_steps)
-                tf.summary.scalar("loss/conf_loss",
-                                  conf_loss,
-                                  step=global_steps)
-                tf.summary.scalar("loss/prob_loss",
-                                  prob_loss,
-                                  step=global_steps)
+                tf.summary.scalar("loss/total_loss", total_loss, step=global_steps)
+                tf.summary.scalar("loss/giou_loss", giou_loss, step=global_steps)
+                tf.summary.scalar("loss/conf_loss", conf_loss, step=global_steps)
+                tf.summary.scalar("loss/prob_loss", prob_loss, step=global_steps)
             writer.flush()
 
     def test_step(image_data, target):
+        """测试步骤
+
+        Args:
+            image_data : 图片数据
+            target : label和bboxes的信息
+        """
         with tf.GradientTape() as tape:
             pred_result = model(image_data, training=True)
             giou_loss = conf_loss = prob_loss = 0
@@ -176,26 +181,29 @@ def main(_argv):
 
             total_loss = giou_loss + conf_loss + prob_loss
 
-            tf.print(
-                "=> TEST STEP %4d   giou_loss: %4.2f   conf_loss: %4.2f   "
-                "prob_loss: %4.2f   total_loss: %4.2f" %
-                (global_steps, giou_loss, conf_loss, prob_loss, total_loss))
+            tf.print("=> TEST STEP %4d   giou_loss: %4.2f   conf_loss: %4.2f   "
+                     "prob_loss: %4.2f   total_loss: %4.2f" %
+                     (global_steps, giou_loss, conf_loss, prob_loss, total_loss))
 
     for epoch in range(first_stage_epochs + second_stage_epochs):
+
         if epoch < first_stage_epochs:
             if not is_freeeze:
                 is_freeeze = True
                 for name in freeze_layers:
                     freeze = model.get_layer(name)
                     freeze_all(freeze)
+
         elif epoch >= first_stage_epochs:
             if is_freeeze:
                 is_freeeze = False
                 for name in freeze_layers:
                     freeze = model.get_layer(name)
                     unfreeze_all(freeze)
+
         for image_data, target in train_set:
             train_step(image_data, target)
+
         for image_data, target in test_set:
             test_step(image_data, target)
         model.save_weights(os.path.join('.', 'yolov4'))
@@ -206,4 +214,3 @@ if __name__ == '__main__':
         app.run(main)
     except SystemExit:
         pass
-

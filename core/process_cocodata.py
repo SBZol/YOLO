@@ -82,10 +82,8 @@ class coco_2_txt:
 
             for index, ann in enumerate(anns):
                 catid = ann['category_id']
-                if self.categories_dict[
-                        catid] not in self.valid_categories_list:
-                    self.valid_categories_list.append(
-                        self.categories_dict[catid])
+                if self.categories_dict[catid] not in self.valid_categories_list:
+                    self.valid_categories_list.append(self.categories_dict[catid])
 
         if os.path.exists(self.classes_path):
             os.remove(self.classes_path)
@@ -97,38 +95,20 @@ class coco_2_txt:
     def process_cocodata(self):
         """处理coco data并输出训练所需要的txt文件
         """
-        # train data 
-        train_output_path = os.path.join(
-            self.output_dir_path,
-            os.path.split(self.train_data_path)[-1] + '.txt')
-        
-        self.output_data_info(
-            self.train_ann_path,
-            self.train_data_path,
-            train_output_path
-        )
-        
+        # train data
+        train_output_path = os.path.join(self.output_dir_path, os.path.split(self.train_data_path)[-1] + '.txt')
+
+        self.output_data_info(self.train_ann_path, self.train_data_path, train_output_path)
+
         # val data
-        val_output_path = os.path.join(
-            self.output_dir_path,
-            os.path.split(self.val_data_path)[-1] + '.txt')
-        
-        self.output_data_info(
-            self.val_ann_path,
-            self.val_data_path,
-            val_output_path
-        )
-        
+        val_output_path = os.path.join(self.output_dir_path, os.path.split(self.val_data_path)[-1] + '.txt')
+
+        self.output_data_info(self.val_ann_path, self.val_data_path, val_output_path)
+
         # test data
-        test_output_path = os.path.join(
-            self.output_dir_path,
-            os.path.split(self.test_data_path)[-1] + '.txt')
-        
-        self.output_data_info(
-            self.test_ann_apth,
-            self.test_data_path,
-            test_output_path
-        )
+        test_output_path = os.path.join(self.output_dir_path, os.path.split(self.test_data_path)[-1] + '.txt')
+
+        self.output_data_info(self.test_ann_apth, self.test_data_path, test_output_path)
 
     def output_data_info(self, ann_path, data_path, ouput_path):
         """解析并输出数据信息文件
@@ -186,13 +166,7 @@ class coco_2_txt:
                     boxes.append(xmax)
                     boxes.append(ymax)
                     boxes.append(valid_catid)
-                    info = ','.join([
-                        str(xmin),
-                        str(ymin),
-                        str(xmax),
-                        str(ymax),
-                        str(valid_catid)
-                    ])
+                    info = ','.join([str(xmin), str(ymin), str(xmax), str(ymax), str(valid_catid)])
 
                     if index == 0:
                         f.write(" " + info)
@@ -205,15 +179,13 @@ class coco_2_txt:
 if __name__ == '__main__':
     from config import cfg
     train_data_path = os.path.join('F:\\', 'data', 'coco2017', 'train2017')
-    train_ann_path = os.path.join('F:\\', 'data', 'annotations','instances_train2017.json')
+    train_ann_path = os.path.join('F:\\', 'data', 'annotations', 'instances_train2017.json')
 
     val_data_path = os.path.join('F:\\', 'data', 'coco2017', 'val2017')
-    val_ann_path = os.path.join('F:\\', 'data', 'annotations',
-                                  'instances_val2017.json')
+    val_ann_path = os.path.join('F:\\', 'data', 'annotations', 'instances_val2017.json')
 
     test_data_path = os.path.join('F:\\', 'data', 'coco2017', 'test2017')
-    test_ann_apth = os.path.join('F:\\', 'data', 'annotations',
-                                   'instances_test2017.json')
+    test_ann_apth = os.path.join('F:\\', 'data', 'annotations', 'instances_test2017.json')
 
     output_dir_path = os.path.join('F:\\', 'data', 'output')
 

@@ -3,4 +3,6 @@
     "python.autoComplete.extraPaths": [
         "F:\\Project\\YOLO",
     ],
+    "python.formatting.provider": "yapf",
+    "python.formatting.yapfArgs": ["--style", "{column_limit:120}"], 
 }

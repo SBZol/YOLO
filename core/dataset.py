@@ -22,10 +22,7 @@ import tensorflow as tf
 
 
 class Dataset(object):
-    def __init__(self,
-                 FLAGS,
-                 is_training: bool,
-                 dataset_type: str = "converted_coco"):
+    def __init__(self, FLAGS, is_training: bool, dataset_type: str = "converted_coco"):
         """根据传入的参数获取数据集
 
         Args:
@@ -34,22 +31,17 @@ class Dataset(object):
             dataset_type (str, optional): 数据集类型. Defaults to "converted_coco".
         """
 
-        self.strides, self.anchors, NUM_LASS, XYSCALE = utils.load_config(
-            FLAGS)
+        self.strides, self.anchors, NUM_LASS, XYSCALE = utils.load_config(FLAGS)
 
         self.dataset_type = dataset_type
 
-        self.annot_path = (cfg.TRAIN.ANNOT_PATH
-                           if is_training else cfg.TEST.ANNOT_PATH)
+        self.annot_path = (cfg.TRAIN.ANNOT_PATH if is_training else cfg.TEST.ANNOT_PATH)
 
-        self.input_size = (cfg.TRAIN.INPUT_SIZE
-                           if is_training else cfg.TEST.INPUT_SIZE)
+        self.input_size = (cfg.TRAIN.INPUT_SIZE if is_training else cfg.TEST.INPUT_SIZE)
 
-        self.batch_size = (cfg.TRAIN.BATCH_SIZE
-                           if is_training else cfg.TEST.BATCH_SIZE)
+        self.batch_size = (cfg.TRAIN.BATCH_SIZE if is_training else cfg.TEST.BATCH_SIZE)
 
-        self.data_aug = (cfg.TRAIN.DATA_AUG
-                         if is_training else cfg.TEST.DATA_AUG)
+        self.data_aug = (cfg.TRAIN.DATA_AUG if is_training else cfg.TEST.DATA_AUG)
 
         self.train_input_sizes = cfg.TRAIN.INPUT_SIZE
 
@@ -78,10 +70,7 @@ class Dataset(object):
         with open(self.annot_path, "r") as f:
             txt = f.readlines()
             if self.dataset_type == "converted_coco":
-                annotations = [
-                    line.strip() for line in txt
-                    if len(line.strip().split()[1:]) != 0
-                ]
+                annotations = [line.strip() for line in txt if len(line.strip().split()[1:]) != 0]
             elif self.dataset_type == "yolo":
                 annotations = []
                 for line in txt:
@@ -160,15 +149,9 @@ class Dataset(object):
                 dtype=np.float32,
             )
 
-            batch_sbboxes = np.zeros(
-                (self.batch_size, self.max_bbox_per_scale, 4),
-                dtype=np.float32)
-            batch_mbboxes = np.zeros(
-                (self.batch_size, self.max_bbox_per_scale, 4),
-                dtype=np.float32)
-            batch_lbboxes = np.zeros(
-                (self.batch_size, self.max_bbox_per_scale, 4),
-                dtype=np.float32)
+            batch_sbboxes = np.zeros((self.batch_size, self.max_bbox_per_scale, 4), dtype=np.float32)
+            batch_mbboxes = np.zeros((self.batch_size, self.max_bbox_per_scale, 4), dtype=np.float32)
+            batch_lbboxes = np.zeros((self.batch_size, self.max_bbox_per_scale, 4), dtype=np.float32)
 
             num = 0
             if self.batch_count < self.num_batchs:
@@ -240,14 +223,10 @@ class Dataset(object):
             max_r_trans = w - max_bbox[2]
             max_d_trans = h - max_bbox[3]
 
-            crop_xmin = max(0,
-                            int(max_bbox[0] - random.uniform(0, max_l_trans)))
-            crop_ymin = max(0,
-                            int(max_bbox[1] - random.uniform(0, max_u_trans)))
-            crop_xmax = max(w,
-                            int(max_bbox[2] + random.uniform(0, max_r_trans)))
-            crop_ymax = max(h,
-                            int(max_bbox[3] + random.uniform(0, max_d_trans)))
+            crop_xmin = max(0, int(max_bbox[0] - random.uniform(0, max_l_trans)))
+            crop_ymin = max(0, int(max_bbox[1] - random.uniform(0, max_u_trans)))
+            crop_xmax = max(w, int(max_bbox[2] + random.uniform(0, max_r_trans)))
+            crop_ymax = max(h, int(max_bbox[3] + random.uniform(0, max_d_trans)))
 
             image = image[crop_ymin:crop_ymax, crop_xmin:crop_xmax]
 
@@ -294,20 +273,14 @@ class Dataset(object):
 
         image = cv2.imread(img_path)
 
-        if self.dataset_type == 'converted_coco':
-            bboxes = np.array(
-                [list(map(int, box.split(","))) for box in line[1:]])
-        elif self.dataset_type == "yolo":
-            pass
+        bboxes = np.array([list(map(int, box.split(","))) for box in line[1:]])
 
         if self.data_aug:
-            image, bboxes = self.random_horizontal_flip(
-                np.copy(image), np.copy(bboxes))
+            image, bboxes = self.random_horizontal_flip(np.copy(image), np.copy(bboxes))
 
             image, bboxes = self.random_crop(np.copy(image), np.copy(bboxes))
 
-            image, bboxes = self.random_translate(np.copy(image),
-                                                  np.copy(bboxes))
+            image, bboxes = self.random_translate(np.copy(image), np.copy(bboxes))
 
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)  # 颜色空间转换函数，BGR转换成RGB
         image, bboxes = utils.image_preprocess(
@@ -326,9 +299,7 @@ class Dataset(object):
                 5 + self.num_classes,
             )) for i in range(3)
         ]
-        bboxes_xywh = [
-            np.zeros((self.max_bbox_per_scale, 4)) for _ in range(3)
-        ]
+        bboxes_xywh = [np.zeros((self.max_bbox_per_scale, 4)) for _ in range(3)]
         bbox_count = np.zeros((3, ))
 
         for bbox in bboxes:
@@ -339,38 +310,38 @@ class Dataset(object):
             onehot[bbox_class_ind] = 1.0
 
             # *** Label smooothing
-            uniform_distribution = np.full(self.num_classes,
-                                           1.0 / self.num_classes)
+            uniform_distribution = np.full(self.num_classes, 1.0 / self.num_classes)
             deta = 0.01
             smooth_onehot = onehot * (1 - deta) + deta * uniform_distribution
             # ***
 
-            bbox_xywh = np.concatenate(
+            bbox_xywh = np.concatenate(  # 根据box左下右上角坐标算出中心点x,y和宽高w,d
                 [
                     (bbox_coor[2:] + bbox_coor[:2]) * 0.5,
                     bbox_coor[2:] - bbox_coor[:2],
                 ],
                 axis=-1,
             )
-            bbox_xywh_scaled = (1.0 * bbox_xywh[np.newaxis, :] /
-                                self.strides[:, np.newaxis])
+
+            bbox_xywh_scaled = (1.0 * bbox_xywh[np.newaxis, :] / self.strides[:, np.newaxis])
 
             iou = []
             exist_positive = False
-            for i in range(3):
+            for i in range(3):  # 3个scale,生产3个label
                 anchors_xywh = np.zeros((self.anchor_per_scale, 4))
-                anchors_xywh[:, 0:2] = (
-                    np.floor(bbox_xywh_scaled[i, 0:2]).astype(np.int32) + 0.5)
-                anchors_xywh[:, 2:4] = self.anchors[i]
 
-                iou_scale = utils.iou(bbox_xywh_scaled[i][np.newaxis, :],
-                                           anchors_xywh)
+                anchors_xywh[:, 0:2] = (  # 给每个anchors的x,y赋值
+                    np.floor(bbox_xywh_scaled[i, 0:2]).astype(np.int32) + 0.5)
+
+                anchors_xywh[:, 2:4] = self.anchors[i]  # 给每个anchors的w,h赋值
+
+                iou_scale = utils.iou(bbox_xywh_scaled[i][np.newaxis, :], anchors_xywh)  # 计算每个anchor的iou
                 iou.append(iou_scale)
+
                 iou_mask = iou_scale > 0.3
 
-                if np.any(iou_mask):
-                    xind, yind = np.floor(bbox_xywh_scaled[i, 0:2]).astype(
-                        np.int32)
+                if np.any(iou_mask):  # 只要iou_mask中有True
+                    xind, yind = np.floor(bbox_xywh_scaled[i, 0:2]).astype(np.int32)
 
                     label[i][yind, xind, iou_mask, :] = 0
                     label[i][yind, xind, iou_mask, 0:4] = bbox_xywh
@@ -384,25 +355,25 @@ class Dataset(object):
                     exist_positive = True
 
             if not exist_positive:
-                best_anchor_ind = np.argmax(np.array(iou).reshape(-1), axis=-1)
+                best_anchor_ind = np.argmax(  # 返回最大值坐标
+                    np.array(iou).reshape(-1), axis=-1)
                 best_detect = int(best_anchor_ind / self.anchor_per_scale)
                 best_anchor = int(best_anchor_ind % self.anchor_per_scale)
-                xind, yind = np.floor(bbox_xywh_scaled[best_detect,
-                                                       0:2]).astype(np.int32)
+                xind, yind = np.floor(bbox_xywh_scaled[best_detect, 0:2]).astype(np.int32)
 
                 label[best_detect][yind, xind, best_anchor, :] = 0
                 label[best_detect][yind, xind, best_anchor, 0:4] = bbox_xywh
                 label[best_detect][yind, xind, best_anchor, 4:5] = 1.0
                 label[best_detect][yind, xind, best_anchor, 5:] = smooth_onehot
 
-                bbox_ind = int(bbox_count[best_detect] %
-                               self.max_bbox_per_scale)
+                bbox_ind = int(bbox_count[best_detect] % self.max_bbox_per_scale)
                 bboxes_xywh[best_detect][bbox_ind, :4] = bbox_xywh
                 bbox_count[best_detect] += 1
+
         label_sbbox, label_mbbox, label_lbbox = label
         sbboxes, mbboxes, lbboxes = bboxes_xywh
         return label_sbbox, label_mbbox, label_lbbox, sbboxes, mbboxes, lbboxes
 
 
 if __name__ == '__main__':
-   pass
+    pass
