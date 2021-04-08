@@ -14,9 +14,9 @@
 import core.utils as utils
 
 import os
-import cv2
 import random
 import numpy as np
+from cv2 import cv2
 import tensorflow as tf
 
 

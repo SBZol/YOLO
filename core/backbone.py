@@ -37,7 +37,7 @@ def cspdarknet53(input_data):
     input_data = residual_block(input_data, 64, (32, 64), 'mish')  # res_block_1
     input_data = convolutional(input_data, (1, 1, 64, 64), activate_type='mish')  # transition_1_1
 
-    input_data = tf.concat([input_data, route], axis=-1)  # concat_1
+    input_data = tf.concat([input_data, route], -1)  # concat_1
     input_data = convolutional(input_data, (1, 1, 128, 64), activate_type='mish')  # transition_1_2
     input_data = convolutional(input_data, (3, 3, 64, 128), downsample=True, activate_type='mish')  # downsample_1
 
@@ -70,7 +70,7 @@ def cspdarknet53(input_data):
                                     activate_type='mish')  # res_block_3
     input_data = convolutional(input_data, (1, 1, 128, 128), activate_type='mish')  # transition_3_1
 
-    input_data = tf.concat([input_data, route], axis=-1)  # concat_3
+    input_data = tf.concat([input_data, route], -1)  # concat_3
     input_data = convolutional(input_data, (1, 1, 256, 256), activate_type='mish')  # transition_3_2
 
     route_1 = input_data  # 支线输出1
@@ -89,7 +89,7 @@ def cspdarknet53(input_data):
                                     activate_type='mish')  # res_block_4
     input_data = convolutional(input_data, (1, 1, 256, 256), activate_type='mish')  # transition_4_1
 
-    input_data = tf.concat([input_data, route], axis=-1)  # concat_4
+    input_data = tf.concat([input_data, route], -1)  # concat_4
     input_data = convolutional(input_data, (1, 1, 512, 512), activate_type='mish')  # transition_4_2
 
     route_2 = input_data  # 支线输出2
