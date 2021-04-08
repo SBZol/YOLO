@@ -115,7 +115,7 @@ def decode_train(conv_output, output_size, num_class, strides, anchors, i=0, xx_
         strides : 输出特征到输出特征的缩小倍数
         anchors : 3个不同的scale对应的anchors
         i : 3个scale的index. Defaults to 0.
-        XYSCALE : 用于计算pred_xy，暂时没搞懂干什么用. Defaults to [1, 1, 1].
+        xx_scale : 用于计算pred_xy，暂时没搞懂干什么用. Defaults to [1, 1, 1].
 
     Returns:
         ouput_layer

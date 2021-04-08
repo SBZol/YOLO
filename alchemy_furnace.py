@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
 '''
-@File    :   train.py
+@File    :   alchemy_furnace.py
 @Time    :   2021/03/31 05:38:36
 @Author  :   Zol
 @Version :   1.0
@@ -158,7 +158,7 @@ class Alchemy_furnace:
                 self._train_step(image_data, target, model, writer)
 
             for image_data, target in self.test_set:
-                self._test_step(image_data, target)
+                self._test_step(image_data, target, model)
 
             model.save_weights(os.path.join('.', 'yolov4'))
 

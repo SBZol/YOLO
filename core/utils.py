@@ -11,9 +11,9 @@
 '''
 
 # here put the import lib
-import cv2
 import threading
 import numpy as np
+from cv2 import cv2
 import tensorflow as tf
 
 
